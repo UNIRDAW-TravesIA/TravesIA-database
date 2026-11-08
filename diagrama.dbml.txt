@@ -1,0 +1,93 @@
+DIAGRAM.IO
+
+// ===== MVP =====
+Table usuarios [headercolor: #323E32] {
+  id uuid [pk, default: `gen_random_uuid()`]
+  email varchar(255) [not null, unique]
+  nombre varchar(100)
+  avatar_url text
+  proveedor varchar(20) [not null, default: 'google']
+  proveedor_id varchar(255)
+  creado_en timestamptz [not null, default: `now()`]
+}
+
+Table chats [headercolor: #323E32] {
+  id uuid [pk, default: `gen_random_uuid()`]
+  usuario_id uuid [not null, ref: > usuarios.id]
+  titulo varchar(150) [not null, default: 'Nuevo viaje']
+  destino varchar(150)
+  fecha_inicio date
+  num_dias smallint
+  presupuesto varchar(20) [note: 'bajo, medio o alto']
+  ritmo varchar(20) [note: 'tranquilo, normal o intenso']
+  creado_en timestamptz [not null, default: `now()`]
+  actualizado_en timestamptz [not null, default: `now()`]
+}
+
+Table mensajes [headercolor: #323E32] {
+  id uuid [pk, default: `gen_random_uuid()`]
+  chat_id uuid [not null, ref: > chats.id]
+  rol varchar(10) [not null, note: 'usuario o ia']
+  contenido text [not null]
+  creado_en timestamptz [not null, default: `now()`]
+}
+
+Table itinerarios [headercolor: #323E32] {
+  id uuid [pk, default: `gen_random_uuid()`]
+  chat_id uuid [not null, ref: > chats.id]
+  version int [not null, default: 1]
+  datos jsonb [not null, note: 'Días y actividades; cada actividad lleva su lugar_id']
+  creado_en timestamptz [not null, default: `now()`]
+  indexes {
+    (chat_id, version) [unique]
+  }
+}
+
+// ===== Fases posteriores =====
+Table categorias [headercolor: #C6754E] {
+  id smallint [pk, increment]
+  nombre varchar(50) [not null, unique, note: 'Museos, Restaurantes, Tours...']
+}
+
+Table chat_categorias [headercolor: #C6754E] {
+  chat_id uuid [ref: > chats.id]
+  categoria_id smallint [ref: > categorias.id]
+  indexes {
+    (chat_id, categoria_id) [pk]
+  }
+}
+
+Table lugares [headercolor: #C6754E] {
+  id uuid [pk, default: `gen_random_uuid()`]
+  categoria_id smallint [ref: > categorias.id]
+  nombre varchar(200) [not null]
+  ciudad varchar(100) [not null]
+  direccion text
+  latitud numeric(9,6)
+  longitud numeric(9,6)
+  web_oficial text
+  descripcion_oficial text [note: 'Extraída de su web oficial']
+  actualizado_en timestamptz [not null, default: `now()`]
+}
+
+Table resenas [headercolor: #C6754E] {
+  id uuid [pk, default: `gen_random_uuid()`]
+  usuario_id uuid [not null, ref: > usuarios.id]
+  lugar_id uuid [not null, ref: > lugares.id]
+  puntuacion smallint [not null, note: 'De 1 a 5']
+  comentario text
+  creado_en timestamptz [not null, default: `now()`]
+  indexes {
+    (usuario_id, lugar_id) [unique, note: 'Una reseña por usuario y lugar']
+  }
+}
+
+Table generaciones [headercolor: #C6754E] {
+  id uuid [pk, default: `gen_random_uuid()`]
+  chat_id uuid [not null, ref: > chats.id]
+  tokens_entrada int
+  tokens_salida int
+  duracion_ms int
+  correcta boolean [not null, note: 'false si la IA falló o devolvió un JSON no válido']
+  creado_en timestamptz [not null, default: `now()`]
+}
